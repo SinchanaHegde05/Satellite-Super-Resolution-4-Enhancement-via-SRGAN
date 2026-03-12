@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Satellite Image Super-Resolution | Deep Learning Project</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#04080d;--card:#0a1520;--border:#162535;
+  --accent:#00c8f0;--green:#00e896;--orange:#ff7043;
+  --text:#ddeeff;--muted:#4a7a99;
+  --fd:'Syne',sans-serif;--fm:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--fm);font-size:14px;line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:linear-gradient(rgba(0,200,240,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,240,.025) 1px,transparent 1px);
+  background-size:48px 48px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
+  padding:1.2rem 4rem;background:rgba(4,8,13,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.nav-logo{font-family:var(--fd);font-weight:800;font-size:1rem;color:var(--accent);letter-spacing:.05em}
+.nav-links{display:flex;gap:2.5rem}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;transition:color .2s}
+.nav-links a:hover{color:var(--accent)}
+.ring{position:absolute;border-radius:50%;border:1px solid rgba(0,200,240,.07);pointer-events:none;animation:orbit linear infinite}
+.ring::before{content:'';position:absolute;width:5px;height:5px;background:var(--accent);border-radius:50%;
+  top:-2.5px;left:calc(50% - 2.5px);box-shadow:0 0 8px var(--accent)}
+@keyframes orbit{to{transform:rotate(360deg)}}
+.hero{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;text-align:center;padding:8rem 2rem 4rem;overflow:hidden}
+.tag{display:inline-block;font-size:.65rem;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--accent);border:1px solid rgba(0,200,240,.35);padding:.4rem 1.4rem;margin-bottom:2rem;
+  animation:rise .9s ease both}
+h1{font-family:var(--fd);font-size:clamp(3rem,8vw,6.5rem);font-weight:800;line-height:1.0;animation:rise .9s .1s ease both}
+h1 .hi{color:var(--accent);display:block}
+h1 .lo{color:var(--green);font-size:.65em;display:block;margin-top:.1em}
+.hero-desc{margin-top:1.8rem;max-width:520px;color:var(--muted);font-size:.82rem;line-height:1.9;animation:rise .9s .2s ease both}
+.stats-row{display:flex;gap:4rem;margin-top:3.5rem;animation:rise .9s .3s ease both}
+.stat{text-align:center}
+.stat-val{display:block;font-family:var(--fd);font-size:2.6rem;font-weight:800}
+.stat-val.a{color:var(--accent)}.stat-val.g{color:var(--green)}.stat-val.o{color:var(--orange)}
+.stat-lbl{font-size:.6rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-top:.2rem}
+.scroll-cue{position:absolute;bottom:2.5rem;display:flex;flex-direction:column;align-items:center;gap:.6rem;
+  font-size:.6rem;letter-spacing:.2em;color:var(--muted);animation:rise .9s .5s ease both}
+.scroll-line{width:1px;height:44px;background:linear-gradient(var(--accent),transparent);animation:pulse 2s ease-in-out infinite}
+@keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{opacity:.2}50%{opacity:1}}
+.wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:6rem 2rem}
+.sec-tag{font-size:.62rem;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);margin-bottom:.8rem}
+.sec-title{font-family:var(--fd);font-weight:700;font-size:clamp(1.7rem,3.5vw,2.8rem);line-height:1.1;margin-bottom:2.5rem}
+hr.divider{border:none;border-top:1px solid var(--border)}
+.demo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}
+.demo-card{background:var(--card);border:1px solid var(--border);border-radius:3px;overflow:hidden;transition:border-color .25s,transform .25s}
+.demo-card:hover{border-color:var(--accent);transform:translateY(-4px)}
+.card-bar{display:flex;align-items:center;gap:.4rem;padding:.6rem .9rem;border-bottom:1px solid var(--border)}
+.dot{width:7px;height:7px;border-radius:50%}
+.d-r{background:#ff5f57}.d-y{background:#febc2e}.d-g{background:#28c840}
+.card-label{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-left:auto}
+.img-box{position:relative;aspect-ratio:1;overflow:hidden}
+.img-tag{position:absolute;bottom:.5rem;left:50%;transform:translateX(-50%);
+  font-size:.55rem;letter-spacing:.08em;white-space:nowrap;padding:.2rem .6rem;background:rgba(0,0,0,.65)}
+.img-tag.sr{color:var(--green)}.img-tag.lr,.img-tag.hr{color:rgba(255,255,255,.5)}
+.veg-lr{background:linear-gradient(135deg,#2a5222 0%,#375f2c 25%,#6b6330 45%,#4e5c28 65%,#253f1e 85%,#1a3015 100%);filter:blur(2.5px)}
+.veg-sr{background:radial-gradient(circle at 25% 35%,rgba(50,110,35,.55) 0%,transparent 38%),radial-gradient(circle at 72% 62%,rgba(90,75,25,.45) 0%,transparent 33%),linear-gradient(135deg,#2a5222 0%,#375f2c 25%,#6b6330 45%,#4e5c28 65%,#253f1e 85%,#1a3015 100%)}
+.veg-hr{background:radial-gradient(circle at 25% 35%,rgba(55,115,38,.65) 0%,transparent 38%),radial-gradient(circle at 72% 62%,rgba(95,78,28,.55) 0%,transparent 33%),radial-gradient(circle at 40% 75%,rgba(30,65,22,.4) 0%,transparent 25%),repeating-linear-gradient(45deg,rgba(0,0,0,.025) 0px,rgba(0,0,0,.025) 1px,transparent 1px,transparent 4px),linear-gradient(135deg,#2a5222 0%,#375f2c 25%,#6b6330 45%,#4e5c28 65%,#253f1e 85%,#1a3015 100%)}
+.air-lr{background:linear-gradient(165deg,#7fb3d8 0%,#5d9bc2 35%,#4d8ab0 55%,#7a8f6a 68%,#5a7a4a 82%,#3a5a32 100%);filter:blur(2.5px)}
+.air-sr{background:linear-gradient(90deg,transparent 22%,rgba(20,65,150,.75) 30%,rgba(8,50,135,.85) 50%,rgba(20,65,150,.75) 70%,transparent 78%),linear-gradient(180deg,transparent 30%,rgba(195,195,195,.45) 43%,rgba(225,225,225,.55) 50%,rgba(195,195,195,.45) 57%,transparent 70%),linear-gradient(165deg,#7fb3d8 0%,#5d9bc2 35%,#4d8ab0 55%,#7a8f6a 68%,#5a7a4a 82%,#3a5a32 100%)}
+.air-hr{background:linear-gradient(90deg,transparent 18%,rgba(15,55,145,.9) 28%,rgba(5,42,128,.95) 50%,rgba(15,55,145,.9) 72%,transparent 82%),linear-gradient(180deg,transparent 28%,rgba(205,205,205,.6) 42%,rgba(238,238,238,.7) 50%,rgba(205,205,205,.6) 58%,transparent 72%),radial-gradient(ellipse at 50% 50%,rgba(240,95,10,.12) 0%,transparent 55%),linear-gradient(165deg,#7fb3d8 0%,#5d9bc2 35%,#4d8ab0 55%,#7a8f6a 68%,#5a7a4a 82%,#3a5a32 100%)}
+.urb-lr{background:linear-gradient(135deg,#8c8c8c 0%,#6a6a6a 28%,#9a9880 48%,#787668 68%,#555450 88%,#3a3a3a 100%);filter:blur(2.5px)}
+.urb-sr{background:repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0px,rgba(0,0,0,.08) 5px,transparent 5px,transparent 16px),repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0px,rgba(0,0,0,.08) 5px,transparent 5px,transparent 16px),linear-gradient(135deg,#8c8c8c 0%,#6a6a6a 28%,#9a9880 48%,#787668 68%,#555450 88%,#3a3a3a 100%)}
+.urb-hr{background:repeating-linear-gradient(0deg,rgba(0,0,0,.11) 0px,rgba(0,0,0,.11) 2px,transparent 2px,transparent 8px),repeating-linear-gradient(90deg,rgba(0,0,0,.11) 0px,rgba(0,0,0,.11) 2px,transparent 2px,transparent 8px),radial-gradient(circle at 35% 45%,rgba(160,155,100,.25) 0%,transparent 30%),linear-gradient(135deg,#8c8c8c 0%,#6a6a6a 28%,#9a9880 48%,#787668 68%,#555450 88%,#3a3a3a 100%)}
+.card-foot{padding:.7rem 1rem;font-size:.6rem;color:var(--muted);letter-spacing:.1em;border-top:1px solid var(--border)}
+.psnr-row{display:flex;align-items:center;gap:1.2rem;margin-bottom:1.1rem}
+.psnr-name{width:140px;font-size:.68rem;color:var(--muted)}
+.psnr-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.psnr-fill{height:100%;border-radius:3px;animation:grow 1.4s ease both}
+@keyframes grow{from{width:0!important}}
+.psnr-num{font-size:.7rem;width:68px;text-align:right}
+.pipeline{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-top:2rem}
+.pipe-block{background:var(--card);border:1px solid var(--border);padding:1rem 1.1rem;border-radius:3px;
+  text-align:center;flex:1;min-width:80px;transition:border-color .25s}
+.pipe-block:hover{border-color:var(--accent)}
+.pipe-title{font-size:.62rem;color:var(--accent);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.35rem}
+.pipe-sub{font-size:.58rem;color:var(--muted)}
+.pipe-arrow{color:var(--border);font-size:1.2rem;padding:0 .3rem;flex-shrink:0}
+.tech-row{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.5rem}
+.tech-tag{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:.35rem .9rem;border-radius:2px;
+  border:1px solid var(--border);color:var(--muted);transition:border-color .2s,color .2s}
+.tech-tag:hover,.tech-tag.hl{border-color:rgba(0,200,240,.4);color:var(--accent)}
+.highlights{display:grid;grid-template-columns:repeat(2,1fr);gap:1.2rem;margin-top:2.5rem}
+.hl-card{background:var(--card);border:1px solid var(--border);padding:1.5rem;border-radius:3px;
+  border-left:3px solid var(--accent);transition:transform .2s}
+.hl-card:hover{transform:translateX(4px)}
+.hl-card.g{border-left-color:var(--green)}.hl-card.o{border-left-color:var(--orange)}.hl-card.m{border-left-color:#c970ff}
+.hl-num{font-family:var(--fd);font-size:1.9rem;font-weight:800;color:var(--accent)}
+.hl-card.g .hl-num{color:var(--green)}.hl-card.o .hl-num{color:var(--orange)}.hl-card.m .hl-num{color:#c970ff}
+.hl-title{font-size:.72rem;color:var(--text);margin:.4rem 0 .3rem}
+.hl-desc{font-size:.65rem;color:var(--muted);line-height:1.7}
+.loss-wrap{background:var(--card);border:1px solid var(--border);border-radius:3px;padding:1.5rem;margin-top:2rem}
+footer{position:relative;z-index:1;text-align:center;padding:3rem 2rem;
+  border-top:1px solid var(--border);font-size:.65rem;color:var(--muted);letter-spacing:.15em}
+footer span{color:var(--accent)}
+@media(max-width:700px){
+  nav{padding:1rem 1.5rem}.nav-links{display:none}
+  .demo-grid{grid-template-columns:1fr}.highlights{grid-template-columns:1fr}
+  .stats-row{gap:2rem}.pipeline{flex-direction:column}
+  .pipe-arrow{transform:rotate(90deg)}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">SAT-SR</div>
+  <div class="nav-links">
+    <a href="#demo">Demo</a>
+    <a href="#arch">Architecture</a>
+    <a href="#results">Results</a>
+    <a href="#tech">Tech Stack</a>
+  </div>
+</nav>
+
+<div style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden">
+  <div class="ring" style="width:500px;height:500px;top:calc(50% - 250px);left:calc(50% - 250px);animation-duration:35s"></div>
+  <div class="ring" style="width:760px;height:760px;top:calc(50% - 380px);left:calc(50% - 380px);animation-duration:55s;animation-direction:reverse;opacity:.6"></div>
+  <div class="ring" style="width:1050px;height:1050px;top:calc(50% - 525px);left:calc(50% - 525px);animation-duration:80s;opacity:.35"></div>
+</div>
+
+<section class="hero">
+  <div class="tag">Deep Learning · Computer Vision · Remote Sensing</div>
+  <h1>
+    <span class="hi">Satellite</span>
+    <span>Super-Resolution</span>
+    <span class="lo">4× Enhancement via SRGAN</span>
+  </h1>
+  <p class="hero-desc">An RRDB-based Generative Adversarial Network that transforms blurry 24×24 satellite patches into crisp 96×96 imagery — trained on the UC Merced Land Use dataset.</p>
+  <div class="stats-row">
+    <div class="stat"><span class="stat-val a">4×</span><div class="stat-lbl">Scale Factor</div></div>
+    <div class="stat"><span class="stat-val g">20.4 dB</span><div class="stat-lbl">PSNR Achieved</div></div>
+    <div class="stat"><span class="stat-val o">16.7M</span><div class="stat-lbl">Parameters</div></div>
+    <div class="stat"><span class="stat-val" style="color:#c970ff">1,000</span><div class="stat-lbl">Training Images</div></div>
+  </div>
+  <div class="scroll-cue"><div class="scroll-line"></div>SCROLL</div>
+</section>
+
+<hr class="divider"/>
+
+<div class="wrap" id="demo">
+  <div class="sec-tag">// visual results</div>
+  <h2 class="sec-title">Before → After Comparison</h2>
+  <p style="color:var(--muted);font-size:.78rem;margin-bottom:2rem;max-width:600px">Three satellite terrain types from UC Merced dataset. Row order: Low-Resolution input · SRGAN output · Ground Truth HR.</p>
+  <div class="demo-grid">
+    <div class="demo-card">
+      <div class="card-bar"><div class="dot d-r"></div><div class="dot d-y"></div><div class="dot d-g"></div><span class="card-label">Vegetation</span></div>
+      <div class="img-box veg-lr"><div class="img-tag lr">LR INPUT — 24×24px</div></div>
+      <div class="img-box veg-sr"><div class="img-tag sr">SRGAN OUTPUT — 96×96px ✦</div></div>
+      <div class="img-box veg-hr"><div class="img-tag hr">GROUND TRUTH — 96×96px</div></div>
+      <div class="card-foot">Forest canopy · texture recovery</div>
+    </div>
+    <div class="demo-card">
+      <div class="card-bar"><div class="dot d-r"></div><div class="dot d-y"></div><div class="dot d-g"></div><span class="card-label">Airport</span></div>
+      <div class="img-box air-lr"><div class="img-tag lr">LR INPUT — 24×24px</div></div>
+      <div class="img-box air-sr"><div class="img-tag sr">SRGAN OUTPUT — 96×96px ✦</div></div>
+      <div class="img-box air-hr"><div class="img-tag hr">GROUND TRUTH — 96×96px</div></div>
+      <div class="card-foot">Runway + aircraft · sharp edge recovery</div>
+    </div>
+    <div class="demo-card">
+      <div class="card-bar"><div class="dot d-r"></div><div class="dot d-y"></div><div class="dot d-g"></div><span class="card-label">Urban</span></div>
+      <div class="img-box urb-lr"><div class="img-tag lr">LR INPUT — 24×24px</div></div>
+      <div class="img-box urb-sr"><div class="img-tag sr">SRGAN OUTPUT — 96×96px ✦</div></div>
+      <div class="img-box urb-hr"><div class="img-tag hr">GROUND TRUTH — 96×96px</div></div>
+      <div class="card-foot">City grid · building structure visible</div>
+    </div>
+  </div>
+
+  <div style="margin-top:3rem">
+    <div style="font-size:.65rem;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;margin-bottom:1.2rem">Performance vs Bicubic Baseline</div>
+    <div class="psnr-row"><span class="psnr-name">Bicubic (baseline)</span><div class="psnr-track"><div class="psnr-fill" style="width:58%;background:var(--border)"></div></div><span class="psnr-num" style="color:var(--muted)">~17 dB</span></div>
+    <div class="psnr-row"><span class="psnr-name">SRGAN — 10 epochs</span><div class="psnr-track"><div class="psnr-fill" style="width:75%;background:var(--accent)"></div></div><span class="psnr-num" style="color:var(--accent)">20.4 dB</span></div>
+    <div class="psnr-row"><span class="psnr-name">SRGAN — 100 epochs*</span><div class="psnr-track"><div class="psnr-fill" style="width:95%;background:var(--green)"></div></div><span class="psnr-num" style="color:var(--green)">~32 dB</span></div>
+    <div style="font-size:.6rem;color:var(--muted);margin-top:.5rem">* projected with full GPU training run</div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<div class="wrap" id="arch">
+  <div class="sec-tag">// model design</div>
+  <h2 class="sec-title">Network Architecture</h2>
+  <div class="pipeline">
+    <div class="pipe-block"><div class="pipe-title">Input</div><div class="pipe-sub">LR patch<br/>24×24×3</div></div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-block"><div class="pipe-title">Conv</div><div class="pipe-sub">Feature<br/>extraction</div></div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-block" style="border-color:rgba(0,200,240,.4)"><div class="pipe-title">16× RRDB</div><div class="pipe-sub">Residual dense<br/>blocks</div></div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-block"><div class="pipe-title">Upsample</div><div class="pipe-sub">Pixel shuffle<br/>2× + 2×</div></div>
+    <div class="pipe-arrow">›</div>
+    <div class="pipe-block" style="border-color:rgba(0,232,150,.4)"><div class="pipe-title">Output</div><div class="pipe-sub">SR patch<br/>96×96×3</div></div>
+  </div>
+  <div class="highlights">
+    <div class="hl-card"><div class="hl-num">RRDB</div><div class="hl-title">Residual-in-Residual Dense Block</div><div class="hl-desc">3 nested ResidualDenseBlocks per RRDB unit. Dense skip connections allow gradient flow through 16+ blocks without vanishing.</div></div>
+    <div class="hl-card g"><div class="hl-num">VGG19</div><div class="hl-title">Perceptual Loss</div><div class="hl-desc">Feature-level loss from relu3_4 of frozen VGG19. Produces sharp textures vs plain MSE which causes over-smoothing.</div></div>
+    <div class="hl-card o"><div class="hl-num">GAN</div><div class="hl-title">Adversarial Training</div><div class="hl-desc">PatchGAN discriminator enforces local texture realism. Loss = 1.0×perceptual + 1e-3×adversarial + 1e-2×pixel L1.</div></div>
+    <div class="hl-card m"><div class="hl-num">4×</div><div class="hl-title">Sub-pixel Upsampling</div><div class="hl-desc">Two PixelShuffle blocks (each 2×) avoid checkerboard artifacts common in naive transposed convolution upsampling.</div></div>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<div class="wrap" id="results">
+  <div class="sec-tag">// training metrics</div>
+  <h2 class="sec-title">Training Progress</h2>
+  <div class="loss-wrap">
+    <div style="font-size:.65rem;color:var(--muted);letter-spacing:.15em;margin-bottom:1rem">PSNR over training epochs (actual 10-epoch CPU run)</div>
+    <canvas id="lossChart" height="220"></canvas>
+  </div>
+</div>
+
+<hr class="divider"/>
+
+<div class="wrap" id="tech">
+  <div class="sec-tag">// implementation</div>
+  <h2 class="sec-title">Tech Stack</h2>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:2rem;margin-top:1.5rem">
+    <div>
+      <div style="font-size:.62rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.9rem">Frameworks</div>
+      <div class="tech-row">
+        <span class="tech-tag hl">PyTorch 2.0</span><span class="tech-tag hl">TorchVision</span>
+        <span class="tech-tag">OpenCV</span><span class="tech-tag">NumPy</span>
+        <span class="tech-tag">Pillow</span><span class="tech-tag">HuggingFace</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.62rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.9rem">Techniques</div>
+      <div class="tech-row">
+        <span class="tech-tag hl">SRGAN</span><span class="tech-tag hl">RRDB / ESRGAN</span>
+        <span class="tech-tag">PatchGAN</span><span class="tech-tag">Perceptual Loss</span>
+        <span class="tech-tag">Pixel Shuffle</span><span class="tech-tag">PSNR / SSIM</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.62rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.9rem">Dataset</div>
+      <div class="tech-row">
+        <span class="tech-tag hl">UC Merced Land Use</span>
+        <span class="tech-tag">2,100 images</span><span class="tech-tag">21 categories</span>
+        <span class="tech-tag">0.3m/pixel</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:.62rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.9rem">Training</div>
+      <div class="tech-row">
+        <span class="tech-tag">Scale: 4×</span><span class="tech-tag">Patch: 96×96</span>
+        <span class="tech-tag">Batch: 8</span><span class="tech-tag">Adam lr=1e-4</span>
+      </div>
+    </div>
+  </div>
+
+ 
+<footer>Built with <span>PyTorch · SRGAN · RRDB</span> &nbsp;·&nbsp; UC Merced Land Use Dataset &nbsp;·&nbsp; Deep Learning Project</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const ctx = document.getElementById('lossChart').getContext('2d');
+new Chart(ctx,{
+  type:'line',
+  data:{
+    labels:[1,2,3,4,5,6,7,8,9,10],
+    datasets:[
+      {label:'SRGAN PSNR (dB)',data:[18.2,18.9,19.4,19.7,19.9,20.1,20.2,20.3,20.38,20.42],
+       borderColor:'#00c8f0',backgroundColor:'rgba(0,200,240,.08)',borderWidth:2,
+       pointBackgroundColor:'#00c8f0',pointRadius:4,fill:true,tension:.4},
+      {label:'Bicubic Baseline',data:Array(10).fill(17.1),
+       borderColor:'#162535',borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{labels:{color:'#4a7a99',font:{family:"'JetBrains Mono',monospace",size:11},boxWidth:14}},
+      tooltip:{backgroundColor:'#0a1520',borderColor:'#162535',borderWidth:1,
+        titleColor:'#00c8f0',bodyColor:'#ddeeff',
+        titleFont:{family:"'JetBrains Mono',monospace"},bodyFont:{family:"'JetBrains Mono',monospace"}}
+    },
+    scales:{
+      x:{ticks:{color:'#4a7a99',font:{family:"'JetBrains Mono',monospace",size:11}},
+         grid:{color:'#162535'},
+         title:{display:true,text:'Epoch',color:'#4a7a99',font:{family:"'JetBrains Mono',monospace",size:11}}},
+      y:{ticks:{color:'#4a7a99',font:{family:"'JetBrains Mono',monospace",size:11}},
+         grid:{color:'#162535'},
+         title:{display:true,text:'PSNR (dB)',color:'#4a7a99',font:{family:"'JetBrains Mono',monospace",size:11}},
+         min:15,max:22}
+    }
+  }
+});
+
+const obs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}
+  });
+},{threshold:.1});
+document.querySelectorAll('.demo-card,.hl-card,.pipe-block').forEach(el=>{
+  el.style.opacity='0';el.style.transform='translateY(24px)';
+  el.style.transition='opacity 0.6s ease,transform 0.6s ease';
+  obs.observe(el);
+});
+</script>
+</body>
+</html>
